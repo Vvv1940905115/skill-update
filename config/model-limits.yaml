@@ -1,0 +1,38 @@
+# ==============================================================
+# 模型能力限制配置
+# 适配日期: 2026-09-25
+# 说明: 模型版本更新时只改此文件，不改技能逻辑。
+#       每次技能启动时在输出第一行打印适配日期提醒。
+# [更新日志]
+# 2026-09-25: 初始版本。适配 Seedance 2.0/2.5、Hailuo 3。
+# [兼容版本]
+# 技能版本: >=2.0
+# 导出/导入: 支持"导出配置"和"导入配置"指令，在设备间同步本文件。
+# ==============================================================
+
+models:
+  seedance-2.5:
+    display_name: 豆包 Seedance 2.5
+    max_single_segment_seconds: 30
+    max_reference_assets: 50
+    supports_time_blocks: true
+    supports_edit_instructions: true
+    supports_native_languages: 10
+
+  seedance-2.0:
+    display_name: 豆包 Seedance 2.0
+    max_single_segment_seconds: 10
+    max_reference_assets: 10
+    supports_time_blocks: false
+    supports_edit_instructions: false
+
+  hailuo-3:
+    display_name: MiniMax Hailuo 3
+    max_single_segment_seconds: 10
+    modes: [T2VA, I2VA, FL2VA, L2VA, Ref2VA]
+    reference_roles:
+      image: 身份
+      video: 动作
+      audio: 节奏
+    requires_timecodes: true
+    supports_negative_field: true
