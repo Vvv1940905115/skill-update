@@ -79,7 +79,7 @@ The confirmation order is fixed:
 
 1. **Step A: Confirm track.** When no track is specified, output 2-3 candidates with a starred first choice, one-line reasons, and a custom-track prompt; then pause.
 2. **Step B: Confirm topic.** After the track is confirmed, output three candidate topics with a starred recommendation and a custom-topic prompt; then pause.
-3. **Step C: Option sheet.** Output duration, aspect ratio, style, protagonist identity, and target platforms. Every item has a recommendation and custom entry; then pause.
+3. **Step C: Option sheet.** Output duration, aspect ratio, style, protagonist identity, generation model, and target platforms. Every item has a recommendation and custom entry; then pause. The model defaults to Seedance 2.5; `模型=全部` explicitly requests all three.
 4. **Step D: Generate.** Resume only after the user replies with parameters, says "确认", or says "按推荐来"; then output the following Steps 1-4 in one pass.
 
 **Output**:
