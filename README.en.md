@@ -17,21 +17,36 @@ Trigger (normal generation / quick preset / link replication / @投放数据 / @
 Startup check: continue/new workspace; reads SKILL.md + model-limits.yaml; lazily loads slices on demand
     |
     v
-Confirmation flow: recommend track -> pause; confirm topic -> pause; option sheet -> pause
-    |                                                        |
-    +--- user replies "按推荐来" or parameters; then output 1-4 ---+
+Confirmation flow: recommend track -> pause; confirm topic -> pause; option sheet (model/platform) -> pause
+    |                                                                     |
+    +--- user replies "按推荐来" or parameters; output steps 1-4 + confirmed platform packages ---+
     |
     v
 Stage persistence to workspace.md
     |
-    v  user says "editing done"
-Step 5 Platform confirmation: recommend first -> user confirms platforms -> output platform packages + self-check scorecard
+    v
+User generates video manually; if platforms were not confirmed or need changes, use Step 5 fallback
     |
     v  after publishing
 Post-publish calibration: @投放数据 with real data -> invalidate self-score -> diagnose -> update tuning library -> prefer real-data records in the same track next round
 ```
 
 ---
+
+## User Workflow
+
+| Phase | User action | Skill action |
+|---|---|---|
+| 1. Request | Enter a topic, track, link, or preset | Check workspace, lazily load rules, start confirmation |
+| 2. Track | Choose a recommendation or enter a custom track | Recommend candidates, then pause |
+| 3. Topic | Choose a recommendation or enter a custom topic | Recommend candidates, then pause |
+| 4. Options | Reply "按推荐来" or customize duration/aspect/style/model/platform | Output the option sheet, then pause |
+| 5. Generate | Confirm and wait for the full delivery | Output topic, storyboard, selected-model prompts, cover, scorecard, and confirmed platform packages |
+| 6. Production | Copy prompts into Jimeng/Kling/Sora and finish editing | Never calls a video-generation API and never outputs a video file |
+| 7. Platform fallback | Say "剪完了" or name platforms if they were not confirmed or need changes | Recommend priorities first; after confirmation, output only the chosen platform packages |
+| 8. Post-publish | Reply `@投放数据 播放量=... 完播率=...` | Invalidate the AI self-score, diagnose with real data, and update the tuning library |
+
+To reduce confirmation rounds, enter `确认流=极速`: track, topic, and option parameters are combined into one sheet, but generation still waits for user confirmation.
 
 ## 1. Loading Logic (Startup Phase)
 
@@ -80,7 +95,7 @@ The confirmation order is fixed:
 1. **Step A: Confirm track.** When no track is specified, output 2-3 candidates with a starred first choice, one-line reasons, and a custom-track prompt; then pause.
 2. **Step B: Confirm topic.** After the track is confirmed, output three candidate topics with a starred recommendation and a custom-topic prompt; then pause.
 3. **Step C: Option sheet.** Output duration, aspect ratio, style, protagonist identity, generation model, and target platforms. Every item has a recommendation and custom entry; then pause. The model defaults to Seedance 2.5; `模型=全部` explicitly requests all three.
-4. **Step D: Generate.** Resume only after the user replies with parameters, says "确认", or says "按推荐来"; then output the following Steps 1-4 in one pass.
+4. **Step D: Generate.** Resume only after the user replies with parameters, says "确认", or says "按推荐来"; then output the following Steps 1-4 in one pass. Once target platforms in the option sheet are confirmed, their platform packages are output with this generation. The generation model also follows the confirmed option sheet and cannot be switched without confirmation.
 
 **Output**:
 
@@ -147,9 +162,9 @@ At the end of Steps 1-4, results are written to `workspace.md` (or `workspace-<t
 
 Step 5 reads only the workspace file + rule files and is forbidden from carrying the full conversation history of Steps 1-4, sharply reducing multi-turn token consumption.
 
-## 7. Step 5: Multi-Platform Publishing Package (Tiered Defaults)
+## 7. Platform Package Fallback (Tiered Defaults)
 
-**Trigger**: user says `剪完了` ("editing done"). Execute "recommend first, confirm second, output third":
+**Trigger**: the platform list was not confirmed in Step C, or the user later says `剪完了` to add or adjust platforms. Execute "recommend first, confirm second, output third":
 
 1. Output one line `[Platform priority suggestion]` (e.g., recommend Douyin + Xiaohongshu as primary, Bilibili / WeChat Channels as secondary; add TikTok / YouTube for overseas).
 2. Ask the user to confirm the platform list (default suggestion: mainstream three: Douyin, Xiaohongshu, WeChat Channels).
