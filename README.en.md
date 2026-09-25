@@ -11,7 +11,7 @@ A one-stop short-video script engine covering the full workflow from topic plann
 ## Full Workflow Overview
 
 ```
-Trigger (normal generation / quick preset / link replication / @复盘)
+Trigger (normal generation / quick preset / link replication / @投放数据 / @复盘)
     |
     v
 Startup check: continue/new workspace; reads SKILL.md + model-limits.yaml; lazily loads slices on demand
@@ -28,7 +28,7 @@ Stage persistence to workspace.md
 Step 5 Platform confirmation: recommend first -> user confirms platforms -> output platform packages + self-check scorecard
     |
     v  after publishing
-Data retrospective: @复盘 with real data -> attribution analysis -> update experience library -> auto-inject corrections next round
+Post-publish calibration: @投放数据 with real data -> invalidate self-score -> diagnose -> update tuning library -> prefer real-data records in the same track next round
 ```
 
 ---
@@ -193,22 +193,37 @@ When the user explicitly enters `确认流=极速`, track, topic, and option par
 
 **Trigger**: `Replicate this link: [link]`. Only structure, rhythm, shot order, per-second pacing, lighting, emotion, and interaction logic are replicated; characters, lines, brands, and proprietary content are never copied.
 
-1. **Link processing & material grading**: Grade A (original file / frame-by-frame link) full replication; Grade B (complete keyframes + subtitles + duration) replicable with gaps marked [to be filled]; Grade C (title/description/cover only) skeleton-style imitation only, printing `[Original footage missing; extracting structural skeleton for style imitation; per-second shot replication is not possible]`. Local footage first runs `scripts/replication_frames.ps1` to build per-second frame indexes.
+1. **Link processing & material grading**: Grade A (original file / frame-by-frame link) full replication; Grade B (complete keyframes + subtitles + duration) replicable with gaps marked [to be filled]; Grade C (link/title/description/cover only) enters【viral-structure reverse engineering】, outputs a five-dimension skeleton table for opening hook, emotional curve, narrative pacing, core viral point, and ending CTA, then rebuilds a new script with an entirely new topic, lines, and visuals after confirmation. Local footage first runs `scripts/replication_frames.ps1` to build per-second frame indexes.
 2. **Per-second shot ledger**: from 00:00 to the last second, one row per second; skipped seconds, missing seconds, or "same as above" entries are forbidden; then merge into shot/beat-block tables.
 3. **Second-by-second mapping**: every source second maps to exactly one new-film second, preserving shot order, pacing, hook position, transition positions, and emotional peaks; when compressing duration, a second-level compression mapping table is output first.
 4. **Replication prompts**: output via the same `模型=` routing as normal generation, written strictly from the mapping table, auto-split when over the model limit.
 5. **Replication script**: fixed 9 columns (new second / timecode / source second / source shot / visual / dialogue / SFX / duration / hook & emotion).
 6. **Platform confirmation & publishing package**: same tiered-default flow as Step 5; output only after the user confirms platforms.
 
+Without original footage, every skeleton judgment is marked【inferred】. The skill uses only link metadata and user-provided context and never claims to have watched the source video. After the user supplies original footage or complete keyframes + subtitles, it can switch to per-second replication.
+
 Replication also uses stage persistence: Steps 1-5 results are written to the workspace; Step 6 reads only the workspace + rule files.
 
 ---
 
-## 10. Data Retrospective (@复盘)
+## 10. Post-Publish Calibration and Data Retrospective
 
-**Trigger**: `@复盘 120K views, 38% completion, 2.3K likes`. Data is user-provided; missing data is marked [to be filled].
+**Trigger**: `@投放数据 播放量=5000 完播率=25% 点赞=300 评论=20`. The skill suspends normal generation and enters calibration mode. Data is user-provided; missing data is marked [to be filled].
 
-Required metrics:
+Post-publish anchors:
+
+| Metric | Hard anchor |
+|---|---|
+| Completion rate | Below 15% means the first-3-second hook failed; rewrite seconds 1-3 next time |
+| Like rate | Above 3% means emotional resonance or value proof worked; preserve that structure |
+| Comment rate | Above 1% means the interaction CTA worked; preserve comment and closing-question hooks |
+| 3-second retention | Calibrated only when user-provided; otherwise mark [3-second retention missing] |
+
+Every calibration outputs `① Data diagnosis`, `② Scorecard correction`, and `③ Tuning-library write-back`. Real metrics invalidate the prior AI self-check. The tuning library keeps the latest five records per track; a repeated pitfall becomes a hard ban after two occurrences. Later generation for the same track first searches real-data records in `feedback-library.md`.
+
+`@复盘` remains for subjective feedback and successful-structure capture; `@投放数据` is for quantified post-publish calibration.
+
+Normal retrospective metrics:
 
 | Metric | Standard |
 |---|---|
