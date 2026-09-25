@@ -1,6 +1,6 @@
 # 赛道提示词模板：通用规则
 
-- 赛道模板中的多模型示例是参考素材库；第3步按`模型=`只填充对应模型示例，默认`模型=seedance`只使用 Seedance 2.5示例，禁止把模板里三组示例全部输出。
+- 赛道模板只保留骨架和赛道变量；第3步按`模型=`路由加载对应示例：`模型=seedance2.0`读 [../../references/model-seedance.md](../../references/model-seedance.md) 的2.0段，`模型=seedance`读同文件的2.5段，`模型=hailuo`读 [../../references/model-hailuo.md](../../references/model-hailuo.md)。禁止一次读入并输出全部模型示例。
 - `[主角]`：外形、服装、年龄段、身份。
 - `[核心动作]`：主体正在完成的具体动作。
 - `[微动作]`：手部、脚步、眼神、呼吸或道具反应。

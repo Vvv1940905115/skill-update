@@ -14,12 +14,15 @@ A one-stop short-video script engine covering the full workflow from topic plann
 Trigger (normal generation / quick preset / link replication / @复盘)
     |
     v
-Loading phase: reads SKILL.md + model-limits.yaml, lazily loads slices on demand
+Startup check: continue/new workspace; reads SKILL.md + model-limits.yaml; lazily loads slices on demand
     |
     v
-Step 1 Topic planning --> Step 2 Storyboard --> Step 3 Prompts --> Step 4 Cover prompt
+Confirmation flow: recommend track -> pause; confirm topic -> pause; option sheet -> pause
     |                                                        |
-    +----------- Stage persistence to workspace.md <---------+
+    +--- user replies "按推荐来" or parameters; then output 1-4 ---+
+    |
+    v
+Stage persistence to workspace.md
     |
     v  user says "editing done"
 Step 5 Platform confirmation: recommend first -> user confirms platforms -> output platform packages + self-check scorecard
@@ -59,6 +62,7 @@ Conditional loading (load only on match):
 
 | Trigger | File |
 |---|---|
+| No track specified | track-routing.md |
 | Real human subject | character-card.md |
 | Duration exceeds model segment limit | segment-split.md |
 | Style intensity > 20 or explicitly specified | style-weight.md (plus surreal reference when > 0) |
@@ -67,15 +71,22 @@ Conditional loading (load only on match):
 
 ---
 
-## 2. Step 1: Topic Planning
+## 2. Four-Step Confirmation Flow and Topic Planning
 
-**Trigger**: `Make a [type/track], topic is [XXX]`. The type can be omitted; the skill auto-detects the track (destination/route -> Travel Vlog; growth/comparison -> Personal Growth Vlog; lived events -> Personal Experience; product/brand -> Advertising; visual spectacle -> PV; scenic spot/city -> Travel Promo; first-person fly-through -> FPV; hiking/camping -> Outdoor Documentary).
+**Trigger**: `Make a [type/track], topic is [XXX]`. The type can be omitted; the skill uses [references/track-routing.md](references/track-routing.md) to rank candidate tracks for recommendation only. It never silently substitutes a user's choice.
+
+The confirmation order is fixed:
+
+1. **Step A: Confirm track.** When no track is specified, output 2-3 candidates with a starred first choice, one-line reasons, and a custom-track prompt; then pause.
+2. **Step B: Confirm topic.** After the track is confirmed, output three candidate topics with a starred recommendation and a custom-topic prompt; then pause.
+3. **Step C: Option sheet.** Output duration, aspect ratio, style, protagonist identity, and target platforms. Every item has a recommendation and custom entry; then pause.
+4. **Step D: Generate.** Resume only after the user replies with parameters, says "确认", or says "按推荐来"; then output the following Steps 1-4 in one pass.
 
 **Output**:
 
 1. One main topic + one alternative, each with: topic name, entry angle, one-line hook, launch priority (1-3 priority platforms), format suggestion (talking head / documentary / mashup / drama), and hot-topic relevance.
 2. Hot-topic keywords must come from user input (`热点词=A,B,C`); if not provided, the topic starts with a `[需手动填入热点词]` placeholder. Fabricating trends is forbidden.
-3. When tracks overlap, priority is decided by sentence subject; if still ambiguous, the skill asks the user to choose between candidates.
+3. When tracks overlap, print an overlap warning and candidates for user confirmation; silent routing is forbidden.
 
 Launch priorities only influence the platform recommendation in Step 5; they never replace user confirmation.
 
@@ -124,7 +135,7 @@ Non-fantasy tracks (live commerce, seeding) replace node content but never remov
 
 **Director's-desk mode**: write only observable actions, filmable environments, and motivated camera moves. Empty words such as "techy", "premium", or "cinematic" are forbidden.
 
-**Over-length splitting**: segments = CEILING(target duration / model segment limit). Seedance 2.5 limit is 30s; Seedance 2.0 and Hailuo 3 limits are 10s. Each segment uses a sliding window with three context fields: `[Story outline]` + `[Previous segment end state]` + `[Current segment goal]`, never the full history of previous segments.
+**Over-length splitting**: segments = CEILING(target duration / model segment limit); always use the current value in `config/model-limits.yaml`. Each segment uses a sliding window with three context fields: `[Story outline]` + `[Previous segment end state]` + `[Current segment goal]`, never the full history of previous segments.
 
 ## 5. Step 4: Cover-Image Prompt
 
@@ -174,6 +185,8 @@ Each platform gets one independent code block using a compact field line: `Title
 
 Presets accept override parameters: `@产品广告 15s 16:9 模型=hailuo` overrides only the given values and keeps the rest of the preset defaults.
 
+When the user explicitly enters `确认流=极速`, track, topic, and option parameters are combined into one 【rapid confirmation sheet】. The skill still pauses for parameters, "确认", or "按推荐来" before generating.
+
 ---
 
 ## 9. Link Reverse Replication (6 Steps)
@@ -220,6 +233,8 @@ Hits print `[SENSITIVE_HIT]` with per-line details; a clean pass prints `[SENSIT
 
 **Replication frame extraction**: `scripts/replication_frames.ps1` uses ffprobe to read total duration, extract one frame per second, and generate `per_second_index.csv` plus 10-second contact sheets.
 
+**Stale-model reminder**: when the current date is more than 60 days after the adaptation date in `config/model-limits.yaml`, the first output line adds `[提醒] 模型参数已超60天未更新，请核实`.
+
 ---
 
 ## 12. Model Capability Limits (config/model-limits.yaml)
@@ -231,6 +246,7 @@ Hits print `[SENSITIVE_HIT]` with per-line details; a clean pass prints `[SENSIT
 | Hailuo 3 | 10s | — | Timecodes required; image = identity, video = motion, audio = rhythm |
 
 When models update, only this YAML file changes; skill logic stays untouched.
+Generation always uses the current YAML values; this table is a human-readable summary.
 
 ---
 
@@ -246,6 +262,7 @@ Overseas: TikTok, Instagram, Facebook, YouTube, Threads, X, Pinterest, U Lifesty
 
 | Optimization | Effect |
 |---|---|
+| Template example slicing | Five track templates drop from about 30KB to about 10KB; only the selected model slice loads |
 | On-demand track slices | No longer reads all 8+ reference files at startup |
 | `模型=` parameterization | 4-8K tokens saved per turn |
 | Stage persistence cuts history | Step 5 never carries Steps 1-4 conversation |
